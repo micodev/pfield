@@ -43,6 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             Pfield(
               isError: isError,
+              longPressClipboard: false,
               count: fieldCount,
               controller: tc,
             ),

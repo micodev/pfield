@@ -9,10 +9,20 @@ class Pfield extends StatefulWidget {
   final bool autoFocus;
   final TextInputType? keyboardType;
   final bool isError;
+  final String? dialogText;
+  final String? noDialog;
+  final bool longPressClipboard;
+  final String? yesDialog;
+  final String inputValidExperssion;
   final TextEditingController? controller;
   const Pfield(
       {Key? key,
       this.count = 5,
+      this.yesDialog,
+      this.noDialog,
+      this.dialogText,
+      this.longPressClipboard = true,
+      this.inputValidExperssion = r'\d+',
       this.keyboardType = TextInputType.number,
       this.controller,
       this.inputDecoration,
@@ -26,22 +36,29 @@ class Pfield extends StatefulWidget {
 
 class _PfieldState extends State<Pfield> {
   InputDecoration? inputDecoration;
-
+  bool? _isError;
+  TextEditingController? _controller;
   final List<Map<String, dynamic>> pinController =
       List<Map<String, dynamic>>.empty(growable: true);
 
   @override
   void initState() {
     super.initState();
-    if (widget.count == 0) throw Exception("على الأقل حقل واحد");
+    if (widget.count == 0) throw Exception("at least one pin field.");
     if (widget.controller != null) {
-      widget.controller!.addListener(parentControllerChanged);
+      _controller = widget.controller;
+      _controller!.addListener(parentControllerChanged);
+    } else {
+      _controller = TextEditingController();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    _isError = widget.isError;
+    //prevent un-necessary rebuild
     if (pinController.length != widget.count) pinController.clear();
+
     final width = MediaQuery.of(context).size.width;
     double containerWidth = width / (widget.count + 1);
     containerWidth = containerWidth > 100 ? 100 : containerWidth;
@@ -63,36 +80,18 @@ class _PfieldState extends State<Pfield> {
               controller.addListener(textControllerChanged);
             }
             final node = pinController[i]["focusNode"] as FocusNode;
-            node.onKeyEvent = (node, event) {
-              if (event is KeyDownEvent) {
-                if (event.logicalKey.keyLabel == "Backspace") {
-                  pinController[i]["controller"].text = "";
-                  for (var j = i; j < widget.count - 1; j++) {
-                    var swap = pinController[j + 1]["controller"].text;
-                    pinController[j + 1]["controller"].text =
-                        pinController[j]["controller"].text;
-                    pinController[j]["controller"].text = swap;
-                  }
-                  for (var j = widget.count - 1; j >= 0; j--) {
-                    if (pinController[j]["controller"].text.isEmpty && j > 0) {
-                      pinController[j - 1]["focusNode"].requestFocus();
-                    }
-                  }
-                } else if (event.character != null &&
-                    RegExp('[0-9]').hasMatch(event.character!)) {
-                  for (var j = 0; j < widget.count; j++) {
-                    if (pinController[j]["controller"].text.isEmpty) {
-                      pinController[j]["controller"].text = event.character;
-                      if (j < widget.count - 1) {
-                        pinController[j + 1]["focusNode"].requestFocus();
-                      }
-                      break;
-                    }
+            node.onKeyEvent = ((node, event) {
+              if (event is KeyUpEvent) {
+                if (event.logicalKey.keyLabel == "Backspace" &&
+                    pinController[i]["controller"].text == '') {
+                  if (i != 0) {
+                    pinController[i - 1]["controller"].text = '';
+                    pinController[i - 1]["focusNode"].requestFocus();
                   }
                 }
               }
-              return KeyEventResult.handled;
-            };
+              return KeyEventResult.ignored;
+            });
             return SizedBox(
               width: containerWidth,
               child:
@@ -117,21 +116,25 @@ class _PfieldState extends State<Pfield> {
     }
   }
 
-  void textControllerChanged() {
-    if (widget.controller != null) {
+  void textControllerChanged({bool force = false}) {
+    if (_controller != null) {
       String allValues = pinController.map((e) => e["controller"].text).join();
-      if (allValues != widget.controller!.text) {
-        widget.controller!.removeListener(parentControllerChanged);
-        widget.controller!.text = allValues;
-        widget.controller!.addListener(parentControllerChanged);
+      if (force) {
+        parentControllerChanged();
+        return;
+      } else if (allValues != _controller!.text) {
+        _controller!.removeListener(parentControllerChanged);
+        _controller!.text = allValues;
+        _controller!.addListener(parentControllerChanged);
       }
     }
   }
 
   void parentControllerChanged() {
-    String validValue =
-        widget.controller!.text.replaceAll(RegExp(r'[^0-9]'), '');
-
+    String validValue = RegExp(widget.inputValidExperssion)
+        .allMatches(_controller!.text)
+        .map((e) => e.group(0))
+        .join();
     var i = 0;
     for (; i < validValue.length && i < widget.count; i++) {
       pinController[i]["controller"].removeListener(textControllerChanged);
@@ -148,34 +151,71 @@ class _PfieldState extends State<Pfield> {
   Widget buildText(BuildContext context, int index, FocusNode node,
       TextEditingController controller) {
     return Material(
-      child: TextField(
-        keyboardType: widget.keyboardType,
-        autofocus: widget.autoFocus,
-        onTap: () => tappedTextBox(index),
-        focusNode: node,
-        controller: controller,
-        maxLines: 1,
-        buildCounter: (
-          BuildContext context, {
-          required int currentLength,
-          required int? maxLength,
-          required bool isFocused,
-        }) {
-          return null;
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          pinController[index]["focusNode"].requestFocus();
+          tappedTextBox(index);
         },
-        decoration: buildInputDecoration(context, index),
-        textAlign: TextAlign.center,
-        maxLength: 1,
+        onLongPress: () => clipBoardDialogBuilder(context),
+        child: IgnorePointer(
+          child: TextField(
+            enableInteractiveSelection: false,
+            keyboardType: widget.keyboardType,
+            onChanged: (text) => ontextChanged(text, index),
+            autofocus: widget.autoFocus,
+            focusNode: node,
+            controller: controller,
+            maxLines: 1,
+            buildCounter: (
+              BuildContext context, {
+              required int currentLength,
+              required int? maxLength,
+              required bool isFocused,
+            }) {
+              return null;
+            },
+            decoration: buildInputDecoration(context, index),
+            textAlign: TextAlign.center,
+            maxLength: 1,
+          ),
+        ),
       ),
     );
+  }
+
+  void clipBoardDialogBuilder(BuildContext context) async {
+    if (!widget.longPressClipboard) return;
+    AlertDialog alert = AlertDialog(
+      content:
+          Text(widget.dialogText ?? 'Do you want to paste from clipboard ?'),
+      actions: [
+        TextButton(
+            onPressed: () {
+              Clipboard.getData('text/plain').then((data) {
+                if (data!.text!.isNotEmpty) {
+                  _controller!.text = data.text!;
+                }
+              });
+              Navigator.pop(context);
+            },
+            child: Text(widget.yesDialog ?? 'Yes')),
+        TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text(widget.noDialog ?? 'No')),
+      ],
+    );
+    await showDialog(context: context, builder: (context) => alert);
   }
 
   InputDecoration buildInputDecoration(BuildContext context, int index) {
     inputDecoration = widget.inputDecoration ??
         InputDecoration(
-          fillColor: widget.isError ? Colors.red[50] : null,
-          filled: widget.isError ? true : null,
-          focusedBorder: widget.isError
+          fillColor: _isError! ? Colors.red[50] : null,
+          filled: _isError! ? true : null,
+          focusedBorder: _isError!
               ? const UnderlineInputBorder(
                   borderSide: BorderSide(
                     color: Colors.red,
@@ -183,7 +223,7 @@ class _PfieldState extends State<Pfield> {
                   ),
                 )
               : null,
-          enabledBorder: widget.isError
+          enabledBorder: _isError!
               ? const UnderlineInputBorder(
                   borderSide: BorderSide(
                     color: Colors.red,
@@ -194,5 +234,35 @@ class _PfieldState extends State<Pfield> {
           isDense: true,
         );
     return inputDecoration!;
+  }
+
+  void ontextChanged(String value, int index) {
+    if (value.isEmpty) {
+      if (index == 0) {
+        pinController[index]["focusNode"].requestFocus();
+        return;
+      }
+      for (var j = index; j < widget.count - 1; j++) {
+        var swap = pinController[j + 1]["controller"].text;
+        pinController[j + 1]["controller"].text =
+            pinController[j]["controller"].text;
+        pinController[j]["controller"].text = swap;
+      }
+      for (var j = widget.count - 1; j >= 0; j--) {
+        if (pinController[j]["controller"].text.isEmpty && j > 0) {
+          pinController[j - 1]["focusNode"].requestFocus();
+        }
+      }
+      return;
+    }
+    int aindex = index < widget.count - 1 ? index + 1 : widget.count - 1;
+    final anode = pinController[aindex]["focusNode"] as FocusNode;
+    if (value.isNotEmpty &&
+        !RegExp(widget.inputValidExperssion).hasMatch(value)) {
+      textControllerChanged(force: true);
+      return;
+    }
+
+    anode.requestFocus();
   }
 }
