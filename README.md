@@ -1,39 +1,36 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+[PFIELD]('https://github.com/micodev/pfield') a flutter widget that offer pin code textfield with best mechanism, it also can be used responsivly with any platform, feel free to open a pull request or create new feature request I'll be very happy to update it with your creative idea.
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+> ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- responsive.
+- easy to use.
+- made with love using dart ❤️.
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Just add it to your `pubspec.yaml` or use
+command line below:
+`flutter pub add pfield`
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+You can run the example the example folder to explore the features and use cases also.
 
 ```dart
-const like = 'sample';
+Pfield(); // all parameters are optional.
 ```
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+Feel free to open a pull request or create new feature request I'll be very happy to update it with your creative idea.
+
+Also you can get in touch with me for further help.
+
+- [Ibrahim](https://t.me/anime19)
+
+## Screen Shots
+
+![screenshot1](/screenshots/Screenshot_1644762841.png)
+![screenshot2](/screenshots/Screenshot_1644762849.png)
