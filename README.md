@@ -32,5 +32,5 @@ Also you can get in touch with me for further help.
 
 ## Screen Shots
 
-![screenshot1](screenshots/Screenshot_1644762841.png)
-![screenshot2](screenshots/Screenshot_1644762849.png)
+![screenshot1](https://raw.githubusercontent.com/micodev/pfield/main/screenshots/Screenshot_1644762849.png)
+![screenshot2](https://raw.githubusercontent.com/micodev/pfield/main/screenshots/Screenshot_1644762849.png)
